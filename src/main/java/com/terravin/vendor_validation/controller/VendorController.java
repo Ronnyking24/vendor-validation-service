@@ -1,71 +1,84 @@
 package com.terravin.vendor_validation.controller;
 
 import com.terravin.vendor_validation.model.VendorApplication;
-import com.terravin.vendor_validation.service.PDFValidator;
-import com.terravin.vendor_validation.service.EmailService;
-import com.terravin.vendor_validation.service.VisitScheduler;
-import com.terravin.vendor_validation.service.DatabaseService;
-
+import com.terravin.vendor_validation.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
-@Controller
+@RestController
+@CrossOrigin
 public class VendorController {
 
     @Autowired
     private PDFValidator pdfValidator;
 
     @Autowired
-    private EmailService emailService;
+    private VisitScheduler visitScheduler;
 
     @Autowired
-    private VisitScheduler visitScheduler;
+    private PdfGenerator pdfGenerator;
+
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private DatabaseService databaseService;
 
-    @GetMapping("/")
-    public String showForm(Model model) {
-        model.addAttribute("vendor", new VendorApplication());
-        return "apply";
-    }
+    @PostMapping("/api/validate")
+    public ResponseEntity<Map<String, Object>> apiValidate(
+            @RequestParam Map<String, String> params,
+            @RequestParam("application_pdf") MultipartFile pdfFile) {
 
-    @PostMapping("/submit")
-    public String handleSubmission(@ModelAttribute VendorApplication vendor,
-                                   @RequestParam("pdf") MultipartFile pdf,
-                                   Model model) {
-
-        // Save uploaded PDF temporarily
-        String fileName = StringUtils.cleanPath(pdf.getOriginalFilename());
-        File tempFile = new File(System.getProperty("java.io.tmpdir"), fileName);
-
+        Map<String, Object> result = new HashMap<>();
         try {
-            pdf.transferTo(tempFile);
-        } catch (IOException e) {
-            model.addAttribute("message", "Failed to save uploaded file.");
-            return "apply";
+            if (pdfFile == null || pdfFile.isEmpty()) {
+                throw new IllegalArgumentException("No PDF file uploaded.");
+            }
+
+            String fileName = StringUtils.cleanPath(pdfFile.getOriginalFilename());
+            File tempFile = new File(System.getProperty("java.io.tmpdir"), fileName);
+            pdfFile.transferTo(tempFile);
+
+            VendorApplication vendor = new VendorApplication();
+            vendor.setCompanyName(params.get("companyName"));
+            vendor.setContactPerson(params.get("contactPerson"));
+            vendor.setContactEmail(params.get("email"));
+            vendor.setPhone(params.get("phone"));
+            vendor.setYearsInOperation(Integer.parseInt(params.get("yearsInOperation")));
+            vendor.setEmployees(Integer.parseInt(params.get("employees")));
+            vendor.setTurnover(Double.parseDouble(params.get("turnover")));
+            vendor.setMaterial(params.get("material"));
+            vendor.setClients(params.get("clients"));
+            vendor.setCertificationOrganic("true".equalsIgnoreCase(params.get("certificationOrganic")));
+            vendor.setCertificationIso("true".equalsIgnoreCase(params.get("certificationIso")));
+
+            boolean isValid = pdfValidator.validatePDF(tempFile, vendor);
+
+            if (isValid) {
+                Date scheduledDate = visitScheduler.scheduleVisit(vendor);
+                databaseService.saveVendor(vendor);
+                File summaryPdf = pdfGenerator.generateSummary(vendor);
+                emailService.sendApprovalEmail(vendor, tempFile, summaryPdf, scheduledDate);
+                result.put("status", "approved");
+                result.put("scheduledVisitDate", scheduledDate.toString());
+            } else {
+                emailService.sendRejectionEmail(vendor);
+                result.put("status", "rejected");
+            }
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("status", "error");
+            result.put("message", e.getMessage());
+            return ResponseEntity.status(500).body(result);
         }
-
-        // Validate using PDF contents
-        boolean isValid = pdfValidator.validatePDF(tempFile, vendor);
-
-        if (isValid) {
-            visitScheduler.scheduleVisit(vendor);
-            databaseService.saveVendor(vendor);
-            emailService.sendApprovalEmail(vendor);
-            model.addAttribute("message", "Vendor approved. A visit has been scheduled.");
-        } else {
-            emailService.sendRejectionEmail(vendor);
-            model.addAttribute("message", "Vendor rejected. Check your email for feedback.");
-        }
-
-        return "apply";
     }
 }

@@ -21,18 +21,23 @@ public class DatabaseService {
     private String dbPass;
 
     public void saveVendor(VendorApplication vendor) {
-        String sql = "INSERT INTO vendors (company_name, years_of_operation, annual_revenue, certifications, regulations, contact_email) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO vendors (company_name, contact_person, contact_email, phone, years_in_operation, employees, turnover, material, clients, certification_iso, certification_organic) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPass);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, vendor.getCompanyName());
-            stmt.setInt(2, vendor.getYearsOfOperation());
-            stmt.setDouble(3, vendor.getAnnualRevenue());
-            stmt.setBoolean(4, vendor.isHasCertifications());
-            stmt.setBoolean(5, vendor.isCompliesWithRegulations());
-            stmt.setString(6, vendor.getContactEmail());
+            stmt.setString(2, vendor.getContactPerson());
+            stmt.setString(3, vendor.getContactEmail());
+            stmt.setString(4, vendor.getPhone());
+            stmt.setInt(5, vendor.getYearsInOperation());
+            stmt.setInt(6, vendor.getEmployees());
+            stmt.setDouble(7, vendor.getTurnover());
+            stmt.setString(8, vendor.getMaterial());
+            stmt.setString(9, vendor.getClients());
+            stmt.setBoolean(10, vendor.isCertificationIso());
+            stmt.setBoolean(11, vendor.isCertificationOrganic());
 
             stmt.executeUpdate();
             System.out.println("Vendor saved to database.");
