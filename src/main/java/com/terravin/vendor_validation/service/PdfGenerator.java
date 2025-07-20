@@ -17,7 +17,7 @@ public class PdfGenerator {
     public File generateSummary(VendorApplication vendor) {
         try {
             Document document = new Document();
-            File file = new File(System.getProperty("java.io.tmpdir"), "summary_" + vendor.getCompanyName() + ".pdf");
+            File file = new File(System.getProperty("java.io.tmpdir"), "summary_" + vendor.getCompanyName().replaceAll("\\s+","_") + ".pdf");
             PdfWriter.getInstance(document, new FileOutputStream(file));
             document.open();
 
@@ -25,12 +25,12 @@ public class PdfGenerator {
             document.add(new Paragraph("Company: " + vendor.getCompanyName()));
             document.add(new Paragraph("Contact: " + vendor.getContactPerson()));
             document.add(new Paragraph("Phone: " + vendor.getPhone()));
-            document.add(new Paragraph("Email: " + vendor.getContactEmail()));
+            document.add(new Paragraph("Email: " + (vendor.getContactEmail() != null ? vendor.getContactEmail() : "N/A")));
             document.add(new Paragraph("Years in Operation: " + vendor.getYearsInOperation()));
             document.add(new Paragraph("Employees: " + vendor.getEmployees()));
             document.add(new Paragraph("Turnover: " + vendor.getTurnover()));
             document.add(new Paragraph("Material: " + vendor.getMaterial()));
-            document.add(new Paragraph("Clients: " + vendor.getClients()));
+            document.add(new Paragraph("Clients: " + (vendor.getClients() != null ? vendor.getClients() : "N/A")));
             document.add(new Paragraph("Certified: ISO(" + vendor.isCertificationIso() + "), Organic(" + vendor.isCertificationOrganic() + ")"));
 
             document.close();

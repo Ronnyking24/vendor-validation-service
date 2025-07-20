@@ -58,7 +58,8 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, false);
 
             helper.setFrom(from);
-            helper.setTo(vendor.getContactEmail());
+            // Assuming the contactEmail might be null if not stored in DB; adjust accordingly
+            helper.setTo(vendor.getContactEmail() != null ? vendor.getContactEmail() : adminEmail);
             helper.setSubject("❌ Vendor Application Rejected");
             helper.setText("Dear " + vendor.getCompanyName() + ",\n\n"
                     + "Unfortunately, your application did not meet the requirements.\n"
