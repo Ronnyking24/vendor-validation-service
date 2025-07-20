@@ -16,6 +16,7 @@ public class VendorApplication {
     private boolean regulatoryCompliance;  // new field
     private String validationStatus;       // optional for tracking status in app
     private String applicationPdf;          // path or filename of uploaded PDF
+    private byte[] applicationPdfData;
 
     // Getters and setters for all fields:
 
@@ -63,4 +64,7 @@ public class VendorApplication {
 
     public String getApplicationPdf() { return applicationPdf; }
     public void setApplicationPdf(String applicationPdf) { this.applicationPdf = applicationPdf; }
+
+    public byte[] getApplicationPdfData() { return applicationPdfData; }
+    public void setApplicationPdfData(byte[] applicationPdfData) { this.applicationPdfData = applicationPdfData; }
 }

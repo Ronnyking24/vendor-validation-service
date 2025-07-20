@@ -11,25 +11,43 @@
 
     <form method="post" enctype="multipart/form-data" th:action="@{/submit}" th:object="${vendor}">
         <label>Company Name:</label><br>
-        <input type="text" th:field="*{companyName}" required><br>
+        <input type="text" th:field="*{companyName}" name="companyName" required><br>
 
-        <label>Years of Operation:</label><br>
-        <input type="number" th:field="*{yearsOfOperation}" min="0" required><br>
-
-        <label>Annual Revenue:</label><br>
-        <input type="number" step="0.01" th:field="*{annualRevenue}" required><br>
-
-        <label>Has Certifications:</label>
-        <input type="checkbox" th:field="*{hasCertifications}"><br>
-
-        <label>Complies with Regulations:</label>
-        <input type="checkbox" th:field="*{compliesWithRegulations}"><br>
+        <label>Contact Person:</label><br>
+        <input type="text" th:field="*{contactPerson}" name="contactPerson" required><br>
 
         <label>Contact Email:</label><br>
-        <input type="email" th:field="*{contactEmail}" required><br>
+        <input type="email" th:field="*{email}" name="email" required><br>
+
+        <label>Phone:</label><br>
+        <input type="text" th:field="*{phone}" name="phone" required><br>
+
+        <label>Years in Operation:</label><br>
+        <input type="number" th:field="*{yearsInOperation}" name="yearsInOperation" min="0" required><br>
+
+        <label>Employees:</label><br>
+        <input type="number" th:field="*{employees}" name="employees" min="0" required><br>
+
+        <label>Annual Turnover:</label><br>
+        <input type="number" step="0.01" th:field="*{turnover}" name="turnover" required><br>
+
+        <label>Material:</label><br>
+        <input type="text" th:field="*{material}" name="material"><br>
+
+        <label>Clients:</label><br>
+        <input type="text" th:field="*{clients}" name="clients"><br>
+
+        <label>Certification ISO:</label>
+        <input type="checkbox" th:field="*{certificationIso}" name="certificationIso"><br>
+
+        <label>Certification Organic:</label>
+        <input type="checkbox" th:field="*{certificationOrganic}" name="certificationOrganic"><br>
+
+        <label>Regulatory Compliance:</label>
+        <input type="checkbox" th:field="*{regulatoryCompliance}" name="regulatoryCompliance"><br>
 
         <label>Upload PDF:</label><br>
-        <input type="file" name="pdf" accept="application/pdf" required><br><br>
+        <input type="file" name="application_pdf" accept="application/pdf" required><br><br>
 
         <button type="submit">Submit Application</button>
     </form>

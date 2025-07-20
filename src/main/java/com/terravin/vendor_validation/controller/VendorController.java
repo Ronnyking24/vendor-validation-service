@@ -45,7 +45,9 @@ public class VendorController {
                 throw new IllegalArgumentException("No PDF file uploaded.");
             }
 
-            // Save uploaded PDF temporarily
+            // Read PDF bytes
+            byte[] pdfBytes = pdfFile.getBytes();
+            // Save uploaded PDF temporarily for validation and email
             String fileName = StringUtils.cleanPath(pdfFile.getOriginalFilename());
             File tempFile = new File(System.getProperty("java.io.tmpdir"), fileName);
             pdfFile.transferTo(tempFile);
@@ -64,7 +66,8 @@ public class VendorController {
             vendor.setClients(params.get("clients"));
             vendor.setCertificationOrganic("true".equalsIgnoreCase(params.get("certificationOrganic")));
             vendor.setCertificationIso("true".equalsIgnoreCase(params.get("certificationIso")));
-            vendor.setApplicationPdf(tempFile.getAbsolutePath());
+            vendor.setRegulatoryCompliance("true".equalsIgnoreCase(params.get("regulatoryCompliance")));
+            vendor.setApplicationPdfData(pdfBytes);
 
             // Validate and process
             boolean isValid = pdfValidator.validatePDF(tempFile, vendor);
@@ -100,11 +103,41 @@ public class VendorController {
 
         for (VendorApplication vendor : pendingVendors) {
             try {
-                File tempFile = new File(vendor.getApplicationPdf());
-                if (!tempFile.exists()) {
-                    System.out.println("⚠️ Missing PDF: " + vendor.getApplicationPdf());
+                // Fetch the latest vendor data from the database by user_id
+                VendorApplication latestVendor = databaseService.getVendorByUserId(vendor.getUserId());
+                if (latestVendor != null) {
+                    // Copy all fields from latestVendor to vendor, except validationStatus and applicationPdfData
+                    vendor.setCompanyName(latestVendor.getCompanyName());
+                    vendor.setContactPerson(latestVendor.getContactPerson());
+                    vendor.setContactEmail(latestVendor.getContactEmail());
+                    vendor.setPhone(latestVendor.getPhone());
+                    vendor.setYearsInOperation(latestVendor.getYearsInOperation());
+                    vendor.setEmployees(latestVendor.getEmployees());
+                    vendor.setTurnover(latestVendor.getTurnover());
+                    vendor.setMaterial(latestVendor.getMaterial());
+                    vendor.setClients(latestVendor.getClients());
+                    vendor.setCertificationIso(latestVendor.isCertificationIso());
+                    vendor.setCertificationOrganic(latestVendor.isCertificationOrganic());
+                    vendor.setRegulatoryCompliance(latestVendor.isRegulatoryCompliance());
+                }
+                // Write PDF bytes to temp file for validation and email
+                File tempFile = null;
+                if (vendor.getApplicationPdfData() != null) {
+                    tempFile = File.createTempFile("vendor_pdf_", ".pdf");
+                    java.nio.file.Files.write(tempFile.toPath(), vendor.getApplicationPdfData());
+                }
+                if (tempFile == null || !tempFile.exists()) {
+                    System.out.println("⚠️ Missing PDF data for vendor: " + vendor.getCompanyName());
                     continue;
                 }
+
+                // Defensive: ensure contactEmail is set from DB
+                if (vendor.getContactEmail() == null || vendor.getContactEmail().isEmpty()) {
+                    System.out.println("⚠️ Vendor missing contact email: " + vendor.getCompanyName());
+                }
+
+                // Defensive: log regulatoryCompliance value
+                System.out.println("regulatory_compliance for " + vendor.getCompanyName() + ": " + vendor.isRegulatoryCompliance());
 
                 boolean isValid = pdfValidator.validatePDF(tempFile, vendor);
 

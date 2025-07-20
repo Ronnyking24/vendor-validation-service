@@ -9,11 +9,12 @@ import java.io.File;
 public class PDFValidator {
 
     public boolean validatePDF(File pdfFile, VendorApplication vendor) {
-        // Simulated validation logic
-        boolean hasValidCertification = vendor.isCertificationIso() || vendor.isCertificationOrganic();
+        // New strict validation logic
+        boolean hasAllCertifications = vendor.isCertificationIso() && vendor.isCertificationOrganic() && vendor.isRegulatoryCompliance();
         boolean meetsFinancials = vendor.getTurnover() > 10000;
-        boolean sufficientExperience = vendor.getYearsInOperation() >= 2;
+        boolean sufficientExperience = vendor.getYearsInOperation() >= 5;
+        boolean enoughEmployees = vendor.getEmployees() > 50;
 
-        return hasValidCertification && meetsFinancials && sufficientExperience;
+        return hasAllCertifications && meetsFinancials && sufficientExperience && enoughEmployees;
     }
 }

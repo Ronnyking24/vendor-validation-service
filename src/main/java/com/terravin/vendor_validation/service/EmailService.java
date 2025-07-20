@@ -33,7 +33,14 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
             helper.setFrom(from);
-            helper.setTo(adminEmail);
+            String vendorEmail = vendor.getContactEmail();
+            if (vendorEmail != null && !vendorEmail.trim().isEmpty() && vendorEmail.contains("@")) {
+                helper.setTo(new String[]{adminEmail, vendorEmail});
+                System.out.println("Sending approval email to: " + adminEmail + ", " + vendorEmail);
+            } else {
+                helper.setTo(adminEmail);
+                System.out.println("Sending approval email to admin only: " + adminEmail);
+            }
             helper.setSubject("✅ Vendor Approved: " + vendor.getCompanyName());
 
             String formattedDate = new SimpleDateFormat("EEEE, dd MMM yyyy").format(visitDate);
@@ -58,8 +65,14 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, false);
 
             helper.setFrom(from);
-            // Assuming the contactEmail might be null if not stored in DB; adjust accordingly
-            helper.setTo(vendor.getContactEmail() != null ? vendor.getContactEmail() : adminEmail);
+            String vendorEmail = vendor.getContactEmail();
+            if (vendorEmail != null && !vendorEmail.trim().isEmpty() && vendorEmail.contains("@")) {
+                helper.setTo(new String[]{adminEmail, vendorEmail});
+                System.out.println("Sending rejection email to: " + adminEmail + ", " + vendorEmail);
+            } else {
+                helper.setTo(adminEmail);
+                System.out.println("Sending rejection email to admin only: " + adminEmail);
+            }
             helper.setSubject("❌ Vendor Application Rejected");
             helper.setText("Dear " + vendor.getCompanyName() + ",\n\n"
                     + "Unfortunately, your application did not meet the requirements.\n"

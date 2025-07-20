@@ -23,7 +23,9 @@ public class DatabaseService {
     // Save vendor's validation result
     public void saveVendor(VendorApplication vendor, boolean isValid) {
     String sql = "INSERT INTO vendors (user_id, company_name, contact_person, contact_email, phone, years_in_operation, employees, turnover, material, clients, certification_organic, certification_iso, regulatory_compliance, validation_status, application_pdf) " +
-                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                 "ON DUPLICATE KEY UPDATE " +
+                 "company_name=VALUES(company_name), contact_person=VALUES(contact_person), contact_email=VALUES(contact_email), phone=VALUES(phone), years_in_operation=VALUES(years_in_operation), employees=VALUES(employees), turnover=VALUES(turnover), material=VALUES(material), clients=VALUES(clients), certification_organic=VALUES(certification_organic), certification_iso=VALUES(certification_iso), regulatory_compliance=VALUES(regulatory_compliance), validation_status=VALUES(validation_status), application_pdf=VALUES(application_pdf)";
 
     try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPass);
          PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -42,7 +44,7 @@ public class DatabaseService {
         stmt.setBoolean(12, vendor.isCertificationIso());
         stmt.setBoolean(13, vendor.isRegulatoryCompliance());
         stmt.setString(14, isValid ? "approved" : "rejected");
-        stmt.setString(15, vendor.getApplicationPdf());  // pdf filename/path
+        stmt.setBytes(15, vendor.getApplicationPdfData());  // store PDF as BLOB
 
         stmt.executeUpdate();
         System.out.println("✅ Vendor saved to database.");
@@ -67,6 +69,7 @@ public class DatabaseService {
                 vendor.setUserId(rs.getLong("user_id"));
                 vendor.setCompanyName(rs.getString("company_name"));
                 vendor.setContactPerson(rs.getString("contact_person"));
+                vendor.setContactEmail(rs.getString("contact_email"));
                 vendor.setPhone(rs.getString("phone"));
                 vendor.setYearsInOperation(rs.getInt("years_in_operation"));
                 vendor.setEmployees(rs.getInt("employees"));
@@ -75,7 +78,8 @@ public class DatabaseService {
                 vendor.setClients(rs.getString("clients"));
                 vendor.setCertificationIso(rs.getBoolean("certification_iso"));
                 vendor.setCertificationOrganic(rs.getBoolean("certification_organic"));
-                vendor.setApplicationPdf(rs.getString("application_pdf"));
+                vendor.setRegulatoryCompliance(rs.getBoolean("regulatory_compliance"));
+                vendor.setApplicationPdfData(rs.getBytes("application_pdf")); // retrieve PDF as BLOB
 
                 list.add(vendor);
             }
@@ -85,5 +89,37 @@ public class DatabaseService {
         }
 
         return list;
+    }
+
+    // Fetch a vendor by user_id
+    public VendorApplication getVendorByUserId(Long userId) {
+        String sql = "SELECT * FROM vendors WHERE user_id = ? ORDER BY id DESC LIMIT 1";
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPass);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    VendorApplication vendor = new VendorApplication();
+                    vendor.setUserId(rs.getLong("user_id"));
+                    vendor.setCompanyName(rs.getString("company_name"));
+                    vendor.setContactPerson(rs.getString("contact_person"));
+                    vendor.setContactEmail(rs.getString("contact_email"));
+                    vendor.setPhone(rs.getString("phone"));
+                    vendor.setYearsInOperation(rs.getInt("years_in_operation"));
+                    vendor.setEmployees(rs.getInt("employees"));
+                    vendor.setTurnover(rs.getDouble("turnover"));
+                    vendor.setMaterial(rs.getString("material"));
+                    vendor.setClients(rs.getString("clients"));
+                    vendor.setCertificationIso(rs.getBoolean("certification_iso"));
+                    vendor.setCertificationOrganic(rs.getBoolean("certification_organic"));
+                    vendor.setRegulatoryCompliance(rs.getBoolean("regulatory_compliance"));
+                    vendor.setApplicationPdfData(rs.getBytes("application_pdf"));
+                    return vendor;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
